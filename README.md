@@ -6,8 +6,9 @@ server, no notebook, no network.
 `omicsdash` simulates a metabolomics study, runs a short association pipeline
 over it, and renders the whole thing as one self-contained dashboard: curation
 counts, QC drift, PCA, and a volcano plot plus effect estimates for each
-outcome. It is a demonstration of the reporting pattern, not an analysis of any
-real cohort.
+outcome, with a filter bar that searches, sorts and subsets the result tables
+in the browser. It is a demonstration of the reporting pattern, not an analysis
+of any real cohort.
 
 **[View the example dashboard](https://wrlog.github.io/metabolomics-dashboard-demo/)**
 
@@ -36,10 +37,34 @@ Streamlit app needs a server that someone has to keep running, and a PDF cannot
 be scrolled through at full figure resolution.
 
 A self-contained HTML file has none of those requirements. Figures are embedded
-as base64 PNGs and the CSS is inline, so the file can be emailed, attached to a
-ticket, committed next to the code that produced it, or opened years later with
-nothing installed. The test suite enforces this: the rendered output must
-contain no `<script>`, no `<link>`, and no external URLs.
+as base64 PNGs, and the CSS and the interaction script are inline, so the file
+can be emailed, attached to a ticket, committed next to the code that produced
+it, or opened years later with nothing installed. The test suite enforces this:
+the rendered output may contain no external URL, no `<script src>` and no
+`<link href>`, so opening it fetches nothing.
+
+## The controls
+
+A row of controls sits above the report and works entirely client-side:
+
+| Control | What it does |
+| --- | --- |
+| **Outcome** | Shows one outcome's section, or all of them |
+| **Search** | Filters rows by feature ID or m/z as you type |
+| **Annotation** | Restricts rows to one MSI annotation level |
+| **Sort by** | Re-orders every table by p-value, effect size, m/z, retention time or annotation level |
+| **Significant only** | Keeps just the FDR hits |
+| **Reset** | Returns every control to its default |
+| **Dark mode** | Switches theme, overriding the OS preference either way |
+
+Each table holds every curated feature rather than a top-N slice, so the
+search box can actually find things, and a readout under each heading says how
+many rows are showing. The figures are rendered images and cannot redraw, so
+the outcome selector hides whole sections rather than pretending to re-plot.
+
+Nothing starts out hidden, so with JavaScript disabled the page still reads
+correctly — only the controls stop working. Printing restores every hidden row
+and section.
 
 ## What the pipeline does
 
@@ -89,8 +114,10 @@ of the same numbers.
 light surface and once for a dark one, and CSS picks. It is not an inverted
 image, and it respects both the OS setting and an explicit `data-theme`.
 
-**Dependencies.** numpy, pandas, scipy and matplotlib. Nothing else — no
-plotting framework, no templating engine, no web stack.
+**Dependencies.** numpy, pandas, scipy and matplotlib for the analysis;
+nothing at all in the browser. The interactive layer is about 80 lines of
+vanilla JavaScript inlined into the page — no plotting framework, no
+templating engine, no web stack, no CDN.
 
 ## Development
 
@@ -103,7 +130,10 @@ ruff check .
 The tests cover reproducibility from seed, the curation thresholds, a
 hand-checked Benjamini–Hochberg case, recovery of the planted effects with the
 right sign, false-positive control, the null case where nothing should be
-discovered, and the self-containment of the rendered file.
+discovered, the self-containment of the rendered file, and the interactive
+layer: every control the script binds to must exist in the document, every row
+must carry the data attributes the filters read, and nothing may start out
+hidden.
 
 ## License
 
