@@ -222,7 +222,7 @@ SCRIPT = """
       var readout = document.getElementById('count-' + table.dataset.outcome);
       if (readout) {
         readout.textContent = shown + ' of ' + rows.length + ' features shown' +
-          (shown === 0 ? ' \\u2014 try clearing the filters' : '');
+          (shown === 0 ? '. Try clearing the filters.' : '');
       }
     });
   }
@@ -386,7 +386,7 @@ def _annotation_table(features: pd.DataFrame, kept: pd.Index) -> str:
         4: "Unknown",
     }
     rows = "".join(
-        f"<tr><td>Level {lvl} — {names[lvl]}</td><td>{int(n)}</td>"
+        f"<tr><td>Level {lvl}: {names[lvl]}</td><td>{int(n)}</td>"
         f"<td>{n / total * 100:.1f}%</td></tr>"
         for lvl, n in counts.items()
     )
@@ -418,17 +418,17 @@ def build(
     parts.append(_controls())
     parts.append("""<div class="note">
   <strong>Synthetic data.</strong> Every number on this page comes from a seeded
-  simulation in <code>omicsdash.simulate</code>. No real study, subject or
-  measurement is represented here, and none is needed to reproduce it.
+  simulation in <code>omicsdash.simulate</code>. There's no real study, subject
+  or measurement behind it, and you don't need any to reproduce it.
 </div>""")
 
     # 1. Curation
     parts.append("<h2>1 · Data curation</h2>")
     parts.append(
-        "<p>Features are kept when they are detected in at least 70% of study "
-        "samples and vary by no more than 30% RSD across the pooled QC "
-        "injections. Remaining gaps are filled at half the feature minimum, "
-        "then the table is log2-transformed and median-centred per sample.</p>"
+        "<p>Features are kept if they're detected in at least 70% of study "
+        "samples and their RSD across the pooled QC injections is 30% or less. "
+        "Remaining gaps are filled with half the feature minimum, then the "
+        "table is log2-transformed and median-centred per sample.</p>"
     )
     parts.append(_tiles([
         (f"{s['features_in']:,}", "features in"),
@@ -442,27 +442,27 @@ def build(
         figures.qc_drift(study, LIGHT), figures.qc_drift(study, DARK),
         "Median intensity against injection order, with pooled QC samples marked",
         "Median log2 intensity by injection order. Pooled QC samples (diamonds) "
-        "carry the analytical drift without the biology, so their trend line is "
-        "the drift estimate.",
+        "have analytical drift but no biological variation, so their trend "
+        "line is used as the drift estimate.",
     ))
 
     # 2. Feature set
     parts.append("<h2>2 · Feature set and annotation levels</h2>")
     parts.append(
-        "<p>Annotation level records how confidently a feature is identified. "
-        "Most untargeted features stay unknown, which is expected and is the "
-        "reason association results are reported at feature level rather than "
-        "as named metabolites. Use the annotation filter above to restrict the "
-        "result tables to the confidently identified ones.</p>"
+        "<p>Annotation level is how confidently a feature has been identified. "
+        "Most untargeted features stay unknown, which is normal, and it's why "
+        "the results below are reported by feature rather than as named "
+        "metabolites. The annotation filter at the top can limit the result "
+        "tables to the confidently identified ones.</p>"
     )
     parts.append(_annotation_table(study.features, curated.kept))
 
     # 3. PCA
     parts.append("<h2>3 · Principal component analysis</h2>")
     parts.append(
-        "<p>An unsupervised check on what dominates the curated table. Batch "
-        "separation along an early component is a sign that acquisition, not "
-        "biology, is the largest source of variance.</p>"
+        "<p>A quick unsupervised check on the curated table. If samples "
+        "separate by batch along an early component, acquisition is "
+        "contributing more variance than biology.</p>"
     )
     parts.append(_fig(
         figures.pca_scores(components, curated, LIGHT),
@@ -485,7 +485,7 @@ def build(
             f"<p>One linear model per feature: "
             f"<code>feature ~ {outcome} + age + sex + bmi</code>, with "
             f"Benjamini-Hochberg control across the {s['features_kept']:,} "
-            f"curated features. Estimates read as log2 abundance change per "
+            f"curated features. Estimates are log2 abundance change per "
             f"standard deviation of the outcome.</p>",
             _tiles([
                 (f"{n_sig}", f"features at FDR {alpha:g}"),
@@ -496,8 +496,8 @@ def build(
                 figures.volcano(assoc, outcome, LIGHT, alpha),
                 figures.volcano(assoc, outcome, DARK, alpha),
                 f"Volcano plot of feature associations with {label}",
-                "Effect size against evidence. Colour encodes direction only; "
-                "the dashed line is the FDR boundary.",
+                "Effect size against -log10 p-value. Colour only shows "
+                "direction, and the dashed line marks the FDR cutoff.",
             ),
         ]
         if n_sig:
@@ -516,9 +516,9 @@ def build(
     # Ground truth, which is only knowable because the data is simulated.
     parts.append("<h2>Appendix · Planted effects</h2>")
     parts.append(
-        "<p>The simulator writes a known set of associations into the data. "
-        "Listing them here turns the dashboard into something checkable: the "
-        "pipeline should recover these and not much else.</p>"
+        "<p>These are the associations the simulator wrote into the data, "
+        "listed so the results can be checked against them. The pipeline "
+        "should recover these and not much else.</p>"
     )
 
     def _verdict(effect) -> str:

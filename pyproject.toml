@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "omicsdash"
 version = "0.1.0"
-description = "A reproducible, self-contained analysis dashboard built from synthetic metabolomics data"
+description = "Analyses seeded synthetic metabolomics data and renders the results as one offline HTML dashboard"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
